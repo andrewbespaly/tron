@@ -6,16 +6,17 @@ const board_border = 'black';
 const board_background = "white";
 const snake_col = 'lightblue';
 const snake_border = 'darkblue';
-let snake = [
-  { x: 0, y: 200 },
-  { x: 190, y: 200 },
-  { x: 180, y: 200 },
-];
+let snake = { x: 0, y: 200 };
+let lastPos = { x: 0, y: 0 };
+const playerSize = 10;
+const step = 3;
+const trailSize = 2;
+
 
 // True if changing direction
 let changing_direction = false;
 // Horizontal velocity
-let dx = 10;
+let dx = step;
 // Vertical velocity
 let dy = 0;
 
@@ -24,6 +25,16 @@ snakeboard.width = window.innerWidth * .9;
 snakeboard.height = window.innerHeight * .9;
 const snakeboard_ctx = gameCanvas.getContext("2d");
 
+
+let trailMap = [];
+for(var row = 0; row < snakeboard.height; row++){
+  trailMap[row] = [];
+  for(var col = 0; col < snakeboard.width; col++){
+    trailMap[row][col] = 0;
+  }
+}
+console.log(snakeboard.width, snakeboard.height);
+console.log(trailMap)
 // Start game
 main();
 
@@ -39,9 +50,10 @@ function main() {
     clearCanvas();
     move_snake();
     drawSnake();
+    drawTrail();
     // Call main again
     main();
-  }, 100)
+  }, 10)
 }
 
 function clearCanvas() {
@@ -55,36 +67,67 @@ function clearCanvas() {
     snakeboard_ctx.strokeRect(0, 0, snakeboard.width, snakeboard.height);
   }
 
-function drawSnakePart(snakePart) 
-{  
-  snakeboard_ctx.fillStyle = snake_col;  
-  snakeboard_ctx.strokestyle = snake_border;
-  snakeboard_ctx.fillRect(snakePart.x, snakePart.y, 10, 10);  
-  snakeboard_ctx.strokeRect(snakePart.x, snakePart.y, 10, 10);
-}
+// function drawSnakePart(snakePart) 
+// {  
+//   snakeboard_ctx.fillStyle = snake_col;  
+//   snakeboard_ctx.strokestyle = snake_border;
+//   snakeboard_ctx.fillRect(snakePart.x, snakePart.y, 10, 10);  
+//   snakeboard_ctx.strokeRect(snakePart.x, snakePart.y, 10, 10);
+// }
  
 /*Function that prints the parts*/
 function drawSnake() 
 {  
-  snake.forEach(drawSnakePart);
+  snakeboard_ctx.fillStyle = snake_col;  
+  snakeboard_ctx.strokestyle = snake_border;
+  snakeboard_ctx.fillRect(snake.x, snake.y, playerSize, playerSize);  
+  snakeboard_ctx.strokeRect(snake.x, snake.y, playerSize, playerSize);
+
+  // snake.forEach(drawSnakePart);
+}
+
+function drawTrail(lastX, lastY) {
+  snakeboard_ctx.fillStyle = 'red';  
+  snakeboard_ctx.strokestyle = 'pink';
+  snakeboard_ctx.fillRect(lastPos.x, lastPos.y, 1, 1);  
+  snakeboard_ctx.strokeRect(lastPos.x, lastPos.y, 1, 1);
+
+  snakeboard_ctx.fillStyle = 'green';
+
+  let trailPoints = [];
+  for(var row = 0; row < trailMap.length; row++){
+    for(var col = 0; col < trailMap[0].length; col++){
+      if(trailMap[row][col] == 1){
+        snakeboard_ctx.fillRect(col, row, trailSize, trailSize);  
+      }
+    }
+  }
+
+
+  
+
+
 }
 
 function move_snake() {
-    // Create the new Snake's head
-    const head = {x: snake[0].x + dx, y: snake[0].y + dy};
-    // Add the new head to the beginning of snake body
-    snake.unshift(head);
-    snake.pop();
+    lastPos.x = (snake.x+(snake.x+playerSize))/2;
+    lastPos.y = (snake.y+(snake.y+playerSize))/2;
+    trailMap[lastPos.y][lastPos.x] = 1;
+
+    snake.x = snake.x + dx;
+    snake.y = snake.y + dy;
+
+
 }
 
 function has_game_ended() {
-    for (let i = 4; i < snake.length; i++) {
-      if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true
-    }
-    const hitLeftWall = snake[0].x < 0;
-    const hitRightWall = snake[0].x > snakeboard.width - 10;
-    const hitToptWall = snake[0].y < 0;
-    const hitBottomWall = snake[0].y > snakeboard.height - 10;
+    // for (let i = 4; i < snake.length; i++) {
+    //   if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true
+    // }
+    const hitLeftWall = snake.x < 0;
+    const hitRightWall = snake.x > snakeboard.width - playerSize;
+    const hitToptWall = snake.y < 0;
+    const hitBottomWall = snake.y > snakeboard.height - playerSize;
     return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall
 }
 
@@ -99,24 +142,27 @@ function change_direction(event) {
     if (changing_direction) return;
     changing_direction = true;
     const keyPressed = event.keyCode;
-    const goingUp = dy === -10;
-    const goingDown = dy === 10;
-    const goingRight = dx === 10;
-    const goingLeft = dx === -10;
+
+    //know the direction you're going
+    const goingUp = dy === -step;
+    const goingDown = dy === step;
+    const goingRight = dx === step;
+    const goingLeft = dx === -step;
+    //change the velocity to a different direction
     if (keyPressed === LEFT_KEY && !goingRight) {
-      dx = -10;
+      dx = -step;
       dy = 0;
     }
     if (keyPressed === UP_KEY && !goingDown) {
       dx = 0;
-      dy = -10;
+      dy = -step;
     }
     if (keyPressed === RIGHT_KEY && !goingLeft) {
-      dx = 10;
+      dx = step;
       dy = 0;
     }
     if (keyPressed === DOWN_KEY && !goingUp) {
       dx = 0;
-      dy = 10;
+      dy = step;
     }
 }
