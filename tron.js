@@ -10,8 +10,9 @@ let snake = { x: 0, y: 200 };
 let prevTrail = { x: 0, y: 0 };
 let currTrail = { x: 0, y: 0 };
 const playerSize = 10;
-const step = 3;
+let step = 3;
 const trailSize = 1;
+let boost = false;
 
 
 // True if changing direction
@@ -47,6 +48,7 @@ for(var row = 0; row < snakeboard.height; row++){
 main();
 
 document.addEventListener("keydown", change_direction);
+document.addEventListener("keyup", let_go);
     
 // main function called repeatedly to keep the game running
 function main() {
@@ -57,6 +59,7 @@ function main() {
     setTimeout(function onTick() {
     clearCanvas();
     move_snake();
+    calcBoost();
     drawSnake();
     drawTrail();
     // Call main again
@@ -86,10 +89,6 @@ function drawSnake()
 }
 
 function drawTrail(lastX, lastY) {
-  snakeboard_ctx.fillStyle = 'red';  
-  // snakeboard_ctx.strokeStyle = 'pink';
-  snakeboard_ctx.fillRect(prevTrail.x, prevTrail.y, 1, 1);  
-  snakeboard_ctx.strokeRect(prevTrail.x, prevTrail.y, 1, 1);
 
   snakeboard_ctx.fillStyle = 'green';
 
@@ -124,19 +123,14 @@ function inHitBox(row, col) {
 
 function move_snake() {
     
-    // centerLastPos.x = (snake.x+(snake.x+playerSize))/2;
-    // centerLastPos.y = (snake.y+(snake.y+playerSize))/2;
     prevTrail.x = currTrail.x;
     prevTrail.y = currTrail.y;
-    // trailMap[centerLastPos.y][centerLastPos.x] = 1;
 
     snake.x = snake.x + dx;
     snake.y = snake.y + dy;
 
     currTrail.x = (snake.x+(snake.x+playerSize))/2;
     currTrail.y = (snake.y+(snake.y+playerSize))/2;
-
-    // trailMap[centerCurrPos.y][centerCurrPos.x] = 1;
 
     goingUp = dy === -step;
     goingDown = dy === step;
@@ -180,10 +174,10 @@ function has_game_ended() {
 
     const hitLeftWall = snake.x < 0;
     const hitRightWall = snake.x >= snakeboard.width - playerSize;
-    const hitToptWall = snake.y < 0;
+    const hitTopWall = snake.y < 0;
     const hitBottomWall = snake.y >= snakeboard.height - playerSize;
 
-    return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall || trailHit()
+    return hitLeftWall || hitRightWall || hitTopWall || hitBottomWall || trailHit()
 }
 
 function change_direction(event) {
@@ -191,19 +185,20 @@ function change_direction(event) {
     const RIGHT_KEY = 39;
     const UP_KEY = 38;
     const DOWN_KEY = 40;
-    
-  // Prevent the snake from reversing
-  
-    if (changing_direction) return;
-    changing_direction = true;
+    const SPACE_KEY = 32;
+
     const keyPressed = event.keyCode;
 
-    //know the direction you're going
-    const goingUp = dy === -step;
-    const goingDown = dy === step;
-    const goingRight = dx === step;
-    const goingLeft = dx === -step;
-    //change the velocity to a different direction
+    if(keyPressed === SPACE_KEY){
+      boost = true;
+      
+    }
+    
+  // Prevent the snake from reversing
+    if (changing_direction) return;
+    changing_direction = true;
+    
+
     if (keyPressed === LEFT_KEY && !goingRight) {
       dx = -step;
       dy = 0;
@@ -238,3 +233,38 @@ function trailHit() {
   return false;
 }
 
+function let_go(event) {
+  const SPACE_KEY = 32;
+  const keyReleased = event.keyCode;
+
+  if(keyReleased === SPACE_KEY){
+    boost = false;
+  }
+
+}
+
+function calcBoost(){
+  if(boost){
+    step = 10;
+  } else {
+    step = 3;
+  }
+
+  if (goingRight) {
+    dx = step;
+    dy = 0;
+  }
+  if (goingDown) {
+    dx = 0;
+    dy = step;
+  }
+  if (goingLeft) {
+    dx = -step;
+    dy = 0;
+  }
+  if (goingUp) {
+    dx = 0;
+    dy = -step;
+  }
+
+}
