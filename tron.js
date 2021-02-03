@@ -2,7 +2,7 @@
 const board_border = "black";
 const board_background = "white";
 const playerSize = 10;
-let step = 3;
+// let step = 1;
 const trailSize = 1;
 
 class player_obj {
@@ -12,6 +12,7 @@ class player_obj {
     this.player_border_color = "black";
     this.player_pos = position;
     this.alive = true;
+    this.step = 3    ;
     // (this.player_pos = { x: 0, y: 0 }),
     this.hitbox = [
       { x: 0, y: 0 },
@@ -24,21 +25,21 @@ class player_obj {
 
     if (direction == 'up') {
       this.dx = 0;
-      this.dy = -step;
+      this.dy = -this.step;
       this.directions = { up: true, right: false, down: false, left: false };
     }
     else if (direction == 'right') {
-      this.dx = step;
+      this.dx = this.step;
       this.dy = 0;
       this.directions = { up: false, right: true, down: false, left: false };
     }
     else if (direction == 'down') {
       this.dx = 0;
-      this.dy = step;
+      this.dy = this.step;
       this.directions = { up: false, right: false, down: true, left: false };
     }
     else if (direction == 'left') {
-      this.dx = -step;
+      this.dx = -this.step;
       this.dy = 0;
       this.directions = { up: false, right: false, down: false, left: true };
     }
@@ -50,8 +51,9 @@ class player_obj {
 let playerList = [];
 
 let player1 = new player_obj('andrew', 'red', {x: 500, y: 500}, 'down');
+let player2 = new player_obj('ethan', 'green', {x: 900, y: 800}, 'up');
 
-playerList.push(player1);
+playerList.push(player1, player2);
 
 
 const gameboard = document.getElementById("gameCanvas");
@@ -79,7 +81,13 @@ function main() {
   // changing_direction = false;
 
   setTimeout(function onTick() {
-    if(gameEnded()) return;
+    if(gameEnded()){ 
+      gameboard_ctx.font = "40px Arial";
+      gameboard_ctx.textAlign = "center";
+      gameboard_ctx.fillStyle = 'Red';
+      gameboard_ctx.fillText("GAME OVER", gameboard.width/2, gameboard.height/2);
+      return;
+    };
     clearCanvas();
     
     move_player();
@@ -114,22 +122,22 @@ function drawPlayer() {
   
 }
 
-function drawTrail(lastX, lastY) {
+function drawTrail() {
 
   playerList.forEach(player => {
-    gameboard_ctx.fillStyle = player.player_color;
-
-    let trailPoints = [];
+    
+    // let trailPoints = [];
     for (var row = 0; row < trailMap.length; row++) {
       for (var col = 0; col < trailMap[0].length; col++) {
         //updates immune trail to not be immune anymore, didnt wanna make an extra double for loop
         if (trailMap[row][col] == 2) {
-          let immuneSpot = inHitBox(player, row, col);
+          let immuneSpot = inHitBox(row, col);
           if (!immuneSpot) {
             trailMap[row][col] = 1;
           }
         }
         if (trailMap[row][col] == 1) {
+          gameboard_ctx.fillStyle = player.player_color;
           gameboard_ctx.fillRect(col, row, trailSize, trailSize);
         }
       }
@@ -138,16 +146,14 @@ function drawTrail(lastX, lastY) {
 
 }
 
-function inHitBox(player, row, col) {
-  for (let i = player.hitbox[0].y; i <= player.hitbox[1].y; i++) {
-    for (let j = player.hitbox[0].x; j <= player.hitbox[1].x; j++) {
-      //if row and col are in hitbox, they're immune
-      if (row == i && col == j) {
-        return true;
-      }
-    }
-  }
-  return false;
+//check if any players are in this spot
+function inHitBox(row, col) {
+  return inPlayerHitbox = playerList.some(player => 
+    player.hitbox[0].y <= row &&
+    row <= player.hitbox[1].y &&
+    player.hitbox[0].x <= col &&
+    col <= player.hitbox[1].x
+  )
 }
 
 function move_player() {
@@ -161,16 +167,22 @@ function move_player() {
       player.player_pos.x = player.player_pos.x + player.dx;
       player.player_pos.y = player.player_pos.y + player.dy;
 
+      //reset changedirection so player can move again
+      player.changing_direction = false;
+
       player.currTrail_pos.x = (player.player_pos.x + (player.player_pos.x + playerSize)) / 2;
       player.currTrail_pos.y = (player.player_pos.y + (player.player_pos.y + playerSize)) / 2;
 
-      player.directions.up = player.dy === -step;
-      player.directions.right = player.dx === step;
-      player.directions.down = player.dy === step;
-      player.directions.left = player.dx === -step;
+      player.directions.up = player.dy === -player.step;
+      player.directions.right = player.dx === player.step;
+      player.directions.down = player.dy === player.step;
+      player.directions.left = player.dx === -player.step;
 
       player.hitbox[0] = { x: player.player_pos.x, y: player.player_pos.y };
       player.hitbox[1] = { x: player.player_pos.x + playerSize, y: player.player_pos.y + playerSize };
+
+      if(player.currTrail_pos.x > gameboard.width){ player.currTrail_pos.x = gameboard.width-1}
+      if(player.currTrail_pos.y > gameboard.height){ player.currTrail_pos.y = gameboard.height-1}
 
       if (player.directions.up) {
         //fill in trail behind you
@@ -214,24 +226,24 @@ function change_direction(event) {
   }
 
   // Prevent the snake from reversing
-  // if (changing_direction) return;
-  // changing_direction = true;
+  if (player1.changing_direction) return;
+  player1.changing_direction = true;
 
   if (keyPressed === LEFT_KEY && !player1.directions.right) {
-    player1.dx = -step;
+    player1.dx = -player1.step;
     player1.dy = 0;
   }
   if (keyPressed === UP_KEY && !player1.directions.down) {
     player1.dx = 0;
-    player1.dy = -step;
+    player1.dy = -player1.step;
   }
   if (keyPressed === RIGHT_KEY && !player1.directions.down.left) {
-    player1.dx = step;
+    player1.dx = player1.step;
     player1.dy = 0;
   }
   if (keyPressed === DOWN_KEY && !player1.directions.up) {
     player1.dx = 0;
-    player1.dy = step;
+    player1.dy = player1.step;
   }
 }
 
@@ -247,26 +259,26 @@ function let_go(event) {
 
 function calcBoost() {
   if (player1.boost) {
-    step = 10;
+    player1.step = 10;
   } else {
-    step = 3;
+    player1.step = 3;
   }
 
   if (player1.directions.right) {
-    player1.dx = step;
+    player1.dx = player1.step;
     player1.dy = 0;
   }
   if (player1.directions.down) {
     player1.dx = 0;
-    player1.dy = step;
+    player1.dy = player1.step;
   }
   if (player1.directions.left) {
-    player1.dx = -step;
+    player1.dx = -player1.step;
     player1.dy = 0;
   }
   if (player1.directions.up) {
     player1.dx = 0;
-    player1.dy = -step;
+    player1.dy = -player1.step;
   }
 }
 
@@ -296,6 +308,5 @@ const checkAlive = () => {
 }
 
 const gameEnded = () => {
-  let all_dead = playerList.every(player => !player.alive);
-  return all_dead;
+  return playerList.every(player => !player.alive);
 }
